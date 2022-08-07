@@ -7,6 +7,7 @@
 
 import UIKit
 
+
 class MainViewController: UIViewController {
 
     override func viewDidLoad() {
@@ -18,6 +19,14 @@ class MainViewController: UIViewController {
         title = "News"
         view.backgroundColor = .systemBlue
         
+        APICaller.shared.getTopStories { result in
+            switch result {
+            case .success(let response):
+                break
+            case .failure(let error):
+                print(error)
+            }
+        }
     }
 
 
