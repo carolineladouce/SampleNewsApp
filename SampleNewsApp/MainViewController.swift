@@ -6,7 +6,7 @@
 //
 
 import UIKit
-
+import SafariServices
 
 class MainViewController: UIViewController, UITableViewDelegate, UITableViewDataSource {
     
@@ -17,6 +17,7 @@ class MainViewController: UIViewController, UITableViewDelegate, UITableViewData
     }()
     
     private var viewModels = [NewsTableViewCellViewModel]()
+    private var articles = [Article]()
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -30,9 +31,20 @@ class MainViewController: UIViewController, UITableViewDelegate, UITableViewData
         newsTableView.delegate = self
         newsTableView.dataSource = self
         
+        fetchTopStories()
+    }
+    
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        newsTableView.frame = view.bounds
+    }
+    
+    
+    func fetchTopStories() {
         APICaller.shared.getTopStories { [weak self] result in
             switch result {
             case .success(let articles):
+                self?.articles = articles
                 self?.viewModels = articles.compactMap({
                     NewsTableViewCellViewModel(title: $0.title,
                                                subtitle: $0.description ?? "No Description",
@@ -48,13 +60,6 @@ class MainViewController: UIViewController, UITableViewDelegate, UITableViewData
             }
         }
     }
-    
-    
-    override func viewDidLayoutSubviews() {
-        super.viewDidLayoutSubviews()
-        newsTableView.frame = view.bounds
-    }
-    
     
     // TableView Functions
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -74,7 +79,14 @@ class MainViewController: UIViewController, UITableViewDelegate, UITableViewData
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
+        let article = articles[indexPath.row]
         
+        guard let url = URL(string: article.url ?? "") else {
+            return
+        }
+        
+        let safariVC = SFSafariViewController(url: url)
+        present(safariVC, animated: true)
     }
     
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
