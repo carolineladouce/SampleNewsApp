@@ -114,5 +114,4 @@ class NewsTableViewCell: UITableViewCell {
     }
     
     
-    
 }

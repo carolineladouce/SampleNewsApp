@@ -8,13 +8,15 @@
 import UIKit
 import SafariServices
 
-class MainViewController: UIViewController, UITableViewDelegate, UITableViewDataSource {
+class MainViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UISearchBarDelegate {
     
     private let newsTableView: UITableView = {
         let table = UITableView()
         table.register(NewsTableViewCell.self, forCellReuseIdentifier: NewsTableViewCell.identifier)
         return table
     }()
+    
+    private let searchVC = UISearchController(searchResultsController: nil)
     
     private var viewModels = [NewsTableViewCellViewModel]()
     private var articles = [Article]()
@@ -32,6 +34,7 @@ class MainViewController: UIViewController, UITableViewDelegate, UITableViewData
         newsTableView.dataSource = self
         
         fetchTopStories()
+        createSearchBar()
     }
     
     override func viewDidLayoutSubviews() {
@@ -39,6 +42,11 @@ class MainViewController: UIViewController, UITableViewDelegate, UITableViewData
         newsTableView.frame = view.bounds
     }
     
+    
+    private func createSearchBar() {
+        navigationItem.searchController = searchVC
+        searchVC.searchBar.delegate = self
+    }
     
     func fetchTopStories() {
         APICaller.shared.getTopStories { [weak self] result in
@@ -93,5 +101,33 @@ class MainViewController: UIViewController, UITableViewDelegate, UITableViewData
         return 150
     }
     
+    // Search
+    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+        guard let text = searchBar.text, !text.isEmpty else {
+            return
+        }
+        
+        APICaller.shared.search(with: text) { [weak self] result in
+            switch result {
+            case .success(let articles):
+                self?.articles = articles
+                self?.viewModels = articles.compactMap({
+                    NewsTableViewCellViewModel(title: $0.title,
+                                               subtitle: $0.description ?? "No Description",
+                                               imageURL: URL(string: $0.urlToImage ?? "")
+                    )
+                })
+
+                DispatchQueue.main.async {
+                    self?.newsTableView.reloadData()
+                    self?.searchVC.dismiss(animated: true, completion: nil)
+                }
+            case .failure(let error):
+                print(error)
+            }
+        }
+    }
+    
+
 }
 
